@@ -1,4 +1,4 @@
-module Encoder where
+module Lib where
 
 import Tree
 
@@ -6,8 +6,7 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Heap ()
 import qualified Data.Heap as Heap
-
-import Data.Maybe
+import Data.List ( unfoldr )
 
 type FreqTable a = Map a Int
 
@@ -37,7 +36,7 @@ _buildTree pq
     pq'  = Heap.deleteMin pq
 
     min2 = Heap.minimum pq'
-    pq'' = Heap.deleteMin pq'    
+    pq'' = Heap.deleteMin pq'
 
 buildTree :: Ord a => [a] -> Maybe (Tree a)
 buildTree = _buildTree . createQueue
@@ -45,11 +44,29 @@ buildTree = _buildTree . createQueue
 createEncodingTable :: Ord a => Tree a -> Map a Encoding
 createEncodingTable t = dfs t []
   where
-    dfs (Leaf a) enc = Map.singleton a (reverse enc)
-    dfs (Node t1 t2) enc = dfs t1 (DLeft : enc) <>
+    dfs (Leaf a)     enc = Map.singleton a (reverse enc)
+    dfs (Node t1 t2) enc = dfs t1 (DLeft  : enc) <>
                            dfs t2 (DRight : enc)
 
 findEncoding :: Ord a => Map a Encoding -> a -> Maybe Encoding
 findEncoding = flip Map.lookup
 
-test = createEncodingTable $ fromJust $ buildTree "hello world"
+encodeAll :: Ord a => Tree a -> [a] -> Maybe Encoding
+encodeAll t xs = concat <$> mapM (findEncoding et) xs
+  where
+    et = createEncodingTable t
+
+decodeTree :: Tree a -> Encoding -> Maybe (a, Encoding)
+decodeTree (Leaf a)     ds     = Just (a, ds)
+decodeTree (Node t1 t2) (d:ds) = case d of 
+                                   DLeft  -> decodeTree t1 ds
+                                   DRight -> decodeTree t2 ds
+decodeTree (Node _ _)   []     = Nothing
+
+decodeAll :: Tree a -> Encoding -> [a]
+decodeAll t = unfoldr (decodeTree t)
+
+test = do
+  pt <- buildTree "aaaa"
+  enc <- encodeAll pt "aaa"
+  return (decodeAll pt enc)
