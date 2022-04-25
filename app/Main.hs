@@ -2,13 +2,15 @@ module Main where
 
 import Tree
 import Lib
+import Encode ( encodeFile )
 
 import System.Environment
-
-import qualified Streaming.ByteString.Char8 as Q
-
 
 main :: IO ()
 main = do
     args <- getArgs
-    if length args < 2 then error "Incorrent arguments" else print args
+    print args
+    case args of
+        ["encode", input, output] -> encodeFile input output
+        ["decode", input, output] -> undefined 
+        _                         -> putStrLn "incorrect input"

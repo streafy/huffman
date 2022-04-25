@@ -25,6 +25,7 @@ source-repository head
 
 library
   exposed-modules:
+      Decode
       Encode
       Lib
       Tree
@@ -34,6 +35,8 @@ library
       src
   build-depends:
       base >=4.7 && <5
+    , binary
+    , bytestring
     , containers
     , heaps
     , streaming
@@ -49,6 +52,8 @@ executable huffman-exe
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , binary
+    , bytestring
     , containers
     , heaps
     , huffman
@@ -66,6 +71,8 @@ test-suite huffman-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , binary
+    , bytestring
     , containers
     , heaps
     , huffman

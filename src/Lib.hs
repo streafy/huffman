@@ -3,70 +3,68 @@ module Lib where
 import Tree
 
 import Data.Map (Map)
-import qualified Data.Map as Map
+import qualified Data.Map as M
 import Data.Heap ()
-import qualified Data.Heap as Heap
+import qualified Data.Heap as H
 import Data.List ( unfoldr )
+
+
+{- Create Huffman Tree -}
 
 type FreqTable a = Map a Int
 
-data Direction = DLeft
-               | DRight
-               deriving (Show, Eq)
-
-type Encoding = [Direction]
-
 createFreqTable :: Ord a => [a] -> FreqTable a
-createFreqTable = foldr func Map.empty
+createFreqTable = foldr func M.empty
   where
-    func x = Map.insertWith (+) x 1
+    func x = M.insertWith (+) x 1
 
-createQueue :: Ord a => [a] -> Heap.Heap (WTree a)
-createQueue = Map.foldrWithKey func Heap.empty . createFreqTable
+createQueue :: Ord a => [a] -> H.Heap (WTree a)
+createQueue = M.foldrWithKey func H.empty . createFreqTable
   where
-    func k v = Heap.insert (createWTree v k)
+    func k v = H.insert (createWTree v k)
 
-_buildTree :: Heap.Heap (WTree a) -> Maybe (Tree a)
+_buildTree :: H.Heap (WTree a) -> Maybe (Tree a)
 _buildTree pq
-    | Heap.null pq  = Nothing
-    | Heap.null pq' = Just (Heap.payload min1)
-    | otherwise     = _buildTree (Heap.insert (mergeWTrees min1 min2) pq'')
+    | H.null pq  = Nothing
+    | H.null pq' = Just (H.payload min1)
+    | otherwise  = _buildTree (H.insert (mergeWTrees min1 min2) pq'')
   where
-    min1 = Heap.minimum pq
-    pq'  = Heap.deleteMin pq
+    min1 = H.minimum pq
+    pq'  = H.deleteMin pq
 
-    min2 = Heap.minimum pq'
-    pq'' = Heap.deleteMin pq'
+    min2 = H.minimum pq'
+    pq'' = H.deleteMin pq'
 
 buildTree :: Ord a => [a] -> Maybe (Tree a)
 buildTree = _buildTree . createQueue
 
+{- Create Encoding -}
+
+type Encoding = [Bool]
+
 createEncodingTable :: Ord a => Tree a -> Map a Encoding
 createEncodingTable t = dfs t []
   where
-    dfs (Leaf a)     enc = Map.singleton a (reverse enc)
-    dfs (Node t1 t2) enc = dfs t1 (DLeft  : enc) <>
-                           dfs t2 (DRight : enc)
+    dfs (Leaf a)     enc = M.singleton a (reverse enc)
+    dfs (Node t1 t2) enc = dfs t1 (False : enc) <>
+                           dfs t2 (True  : enc)
 
 findEncoding :: Ord a => Map a Encoding -> a -> Maybe Encoding
-findEncoding = flip Map.lookup
+findEncoding = flip M.lookup
 
 encodeAll :: Ord a => Tree a -> [a] -> Maybe Encoding
 encodeAll t xs = concat <$> mapM (findEncoding et) xs
   where
     et = createEncodingTable t
 
+{- Decode Encoding -}
+
 decodeTree :: Tree a -> Encoding -> Maybe (a, Encoding)
 decodeTree (Leaf a)     ds     = Just (a, ds)
-decodeTree (Node t1 t2) (d:ds) = case d of 
-                                   DLeft  -> decodeTree t1 ds
-                                   DRight -> decodeTree t2 ds
+decodeTree (Node t1 t2) (d:ds) = case d of
+                                   False -> decodeTree t1 ds
+                                   True  -> decodeTree t2 ds
 decodeTree (Node _ _)   []     = Nothing
 
 decodeAll :: Tree a -> Encoding -> [a]
 decodeAll t = unfoldr (decodeTree t)
-
-test = do
-  pt <- buildTree "aaaa"
-  enc <- encodeAll pt "aaa"
-  return (decodeAll pt enc)

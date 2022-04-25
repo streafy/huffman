@@ -25,6 +25,8 @@ dependencies:
 - heaps
 - streaming
 - streaming-bytestring
+- bytestring
+- binary
 
 library:
   source-dirs: src
