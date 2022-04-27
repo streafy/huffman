@@ -3,11 +3,16 @@ module Encode where
 import Lib
 import Tree ( Tree )
 
-import qualified Data.ByteString as B
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Resource
+import qualified Data.ByteString.Lazy as BL
+import qualified Streaming.ByteString as Q
 import Data.Word ( Word8 )
 import Data.Bits ( Bits(shiftL, (.|.)) )
 import Data.Bool ( bool )
 import Data.Maybe
+import System.IO (withFile, IOMode (ReadMode, WriteMode))
+import Data.Binary hiding (encodeFile)
 
 toWord8 :: Encoding -> Word8
 toWord8 = foldl ((. bool 0 1) . (.|.) . (`shiftL` 1)) 0
@@ -20,11 +25,18 @@ toWord8List xs
     where (y, ys) = splitAt 8 xs
 
 encodeFile :: FilePath -> FilePath -> IO ()
-encodeFile input output = do
-    content <- B.readFile input
-    let tree = buildTree $ B.unpack content
-    let len  = length $ B.unpack content
-    let enc = encodeAll (fromJust tree) (B.unpack content)
-    B.writeFile output (B.pack (toWord8List (fromJust enc)))
+encodeFile input output = 
+    withFile input ReadMode $ \hIn ->
+    withFile output WriteMode $ \hOut -> do
+        content <- BL.hGetContents hIn
+        let tree = buildTree $ BL.unpack content
+        let len  = length $ BL.unpack content
+        --BL.hPut hOut $ encode (len, tree)
+        let enc = encodeAll (fromJust tree) (BL.unpack content)
+        BL.hPut hOut $ BL.pack $ toWord8List $ fromJust enc
 
-f 5 = qweqwe + 5
+--    content <- B.readFile input
+--    let tree = buildTree $ B.unpack content
+--    let len  = length $ B.unpack content
+--    let enc = encodeAll (fromJust tree) (B.unpack content)
+--    B.writeFile output (B.pack (toWord8List (fromJust enc)))

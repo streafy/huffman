@@ -61,10 +61,9 @@ encodeAll t xs = concat <$> mapM (findEncoding et) xs
 
 decodeTree :: Tree a -> Encoding -> Maybe (a, Encoding)
 decodeTree (Leaf a)     ds     = Just (a, ds)
-decodeTree (Node t1 t2) (d:ds) = case d of
-                                   False -> decodeTree t1 ds
-                                   True  -> decodeTree t2 ds
+decodeTree (Node t1 t2) (d:ds) = if d then decodeTree t2 ds else decodeTree t1 ds
 decodeTree (Node _ _)   []     = Nothing
 
-decodeAll :: Tree a -> Encoding -> [a]
-decodeAll t = unfoldr (decodeTree t)
+decodeAll :: Tree a -> Encoding -> Maybe [a]
+decodeAll (Leaf _) _ = Nothing
+decodeAll t      enc = Just $ unfoldr (decodeTree t) enc

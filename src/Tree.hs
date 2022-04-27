@@ -1,10 +1,15 @@
+{-# LANGUAGE DeriveGeneric #-}
 module Tree where
 
+import GHC.Generics
+import Data.Binary
 import Data.Heap ( Entry(Entry) ) 
 
 data Tree a = Leaf a
             | Node (Tree a) (Tree a)
-            deriving (Show)
+            deriving (Show, Generic)
+
+instance Binary a => Binary (Tree a)
 
 createTree :: a -> Tree a
 createTree = Leaf 

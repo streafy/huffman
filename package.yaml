@@ -27,6 +27,7 @@ dependencies:
 - streaming-bytestring
 - bytestring
 - binary
+- resourcet
 
 library:
   source-dirs: src
