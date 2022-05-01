@@ -39,9 +39,6 @@ library
     , bytestring
     , containers
     , heaps
-    , resourcet
-    , streaming
-    , streaming-bytestring
   default-language: Haskell2010
 
 executable huffman-exe
@@ -58,9 +55,6 @@ executable huffman-exe
     , containers
     , heaps
     , huffman
-    , resourcet
-    , streaming
-    , streaming-bytestring
   default-language: Haskell2010
 
 test-suite huffman-test
@@ -78,7 +72,4 @@ test-suite huffman-test
     , containers
     , heaps
     , huffman
-    , resourcet
-    , streaming
-    , streaming-bytestring
   default-language: Haskell2010

@@ -1,21 +1,20 @@
 module Encode where
 
-import Lib
+import Lib  ( Encoding, encodeAll, buildTree )
 import Tree ( Tree )
 
-import Control.Monad.IO.Class
-import Control.Monad.Trans.Resource
-import qualified Data.ByteString.Lazy as BL
-import qualified Streaming.ByteString as Q
-import Data.Word ( Word8 )
-import Data.Bits ( Bits(shiftL, (.|.)) )
-import Data.Bool ( bool )
-import Data.Maybe
 import System.IO (withFile, IOMode (ReadMode, WriteMode))
-import Data.Binary hiding (encodeFile)
+import qualified Data.ByteString.Lazy as BL
+import Data.Bits ( Bits(shiftL, (.|.)) )
+import Data.Binary ( Word8, encode )
+import Data.Maybe ( fromMaybe )
+import Data.Bool ( bool )
+
 
 toWord8 :: Encoding -> Word8
-toWord8 = foldl ((. bool 0 1) . (.|.) . (`shiftL` 1)) 0
+toWord8 = foldl f 0
+  where
+    f a b = a `shiftL` 1 .|. bool 0 1 b
 
 toWord8List :: Encoding -> [Word8]
 toWord8List [] = []
@@ -25,18 +24,17 @@ toWord8List xs
     where (y, ys) = splitAt 8 xs
 
 encodeFile :: FilePath -> FilePath -> IO ()
-encodeFile input output = 
-    withFile input ReadMode $ \hIn ->
+encodeFile input output =
+    withFile input  ReadMode  $ \hIn ->
     withFile output WriteMode $ \hOut -> do
-        content <- BL.hGetContents hIn
-        let tree = buildTree $ BL.unpack content
-        let len  = length $ BL.unpack content
-        --BL.hPut hOut $ encode (len, tree)
-        let enc = encodeAll (fromJust tree) (BL.unpack content)
-        BL.hPut hOut $ BL.pack $ toWord8List $ fromJust enc
+        contentBS <- BL.hGetContents hIn
+        let content = BL.unpack contentBS
 
---    content <- B.readFile input
---    let tree = buildTree $ B.unpack content
---    let len  = length $ B.unpack content
---    let enc = encodeAll (fromJust tree) (B.unpack content)
---    B.writeFile output (B.pack (toWord8List (fromJust enc)))
+        let tree = fromMaybe (error "Empty tree") (buildTree content)
+
+        let len = length $ BL.unpack $ encode tree
+        BL.hPut hOut $ encode (len, tree)
+
+        let enc = fromMaybe (error "Empty encoding") (encodeAll tree content)
+        BL.hPut hOut $ encode $ length enc
+        BL.hPut hOut $ BL.pack $ toWord8List enc
